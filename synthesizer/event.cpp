@@ -56,7 +56,9 @@ void MidiCoreEvent::write(Xml& xml) const
                         }
                   break;
             default:
-                  qDebug("MidiCoreEvent::write: unknown type");
+                  qDebug()<<"MidiCoreEvent::write: unknown type: "<<_type;
+                  xml.tagE(QString("event type=\"%1\" a=\"%2\" b=\"%3\" channel=\"%4\"")
+                     .arg(_type).arg(_a).arg(_b).arg(_channel));
                   break;
             }
       }

@@ -91,6 +91,7 @@ class Seq;
 class ImportMidiPanel;
 class Startcenter;
 class HelpBrowser;
+struct MidiActionItem;
 
 struct PluginDescription;
 enum class SelState : char;
@@ -371,6 +372,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       QStringList _recentScores;
       QToolButton* _playButton;
 
+      QList<MidiActionItem> _midiActionList;
       //---------------------
 
       virtual void closeEvent(QCloseEvent*);
@@ -488,9 +490,15 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void createNewWorkspace();
       void changeWorkspace(Workspace* p);
 
+
    public:
       MuseScore();
       ~MuseScore();
+
+      QList<MidiActionItem>* midiActionList() { return &_midiActionList; }
+      bool loadMidiActions();
+      bool saveMidiActions();
+
       bool checkDirty(Score*);
       PlayPanel* getPlayPanel() const { return playPanel; }
       Mixer* getMixer() const { return mixer; }

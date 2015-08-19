@@ -70,7 +70,6 @@ class InstrumentTemplate {
 
       StringData stringData;
 
-      QList<NamedEventList>   midiActions;
       QList<MidiArticulation> articulation;
       QList<Channel>          channel;
       QList<InstrumentGenre*> genres;     //; list of genres this instrument belongs to

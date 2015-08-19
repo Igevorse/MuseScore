@@ -27,13 +27,13 @@ Instrument InstrumentList::defaultInstrument;
 //   write
 //---------------------------------------------------------
 
-void NamedEventList::write(Xml& xml, const QString& n) const
+void MidiActionItem::write(Xml& xml) const
       {
-      xml.stag(QString("%1 name=\"%2\"").arg(n).arg(name));
+      xml.stag(QString("MidiAction"));
+      xml.tag("id", id);
       if (!descr.isEmpty())
             xml.tag("descr", descr);
-      foreach(const MidiCoreEvent& e, events)
-            e.write(xml);
+      event.write(xml);
       xml.etag();
       }
 
@@ -41,14 +41,13 @@ void NamedEventList::write(Xml& xml, const QString& n) const
 //   read
 //---------------------------------------------------------
 
-void NamedEventList::read(XmlReader& e)
+void MidiActionItem::read(XmlReader& e)
       {
-      name = e.attribute("name");
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "program") {
                   MidiCoreEvent ev(ME_CONTROLLER, 0, CTRL_PROGRAM, e.intAttribute("value", 0));
-                  events.push_back(ev);
+                  event = ev;
                   e.skipCurrentElement();
                   }
             else if (tag == "controller") {
@@ -56,11 +55,21 @@ void NamedEventList::read(XmlReader& e)
                   ev.setType(ME_CONTROLLER);
                   ev.setDataA(e.intAttribute("ctrl", 0));
                   ev.setDataB(e.intAttribute("value", 0));
-                  events.push_back(ev);
+                  event = ev;
+                  e.skipCurrentElement();
+                  }
+            else if (tag == "event") {
+                  MidiCoreEvent ev;
+                  ev.setType(e.intAttribute("type", 0));
+                  ev.setDataA(e.intAttribute("a", 0));
+                  ev.setDataB(e.intAttribute("b", 0));
+                  event = ev;
                   e.skipCurrentElement();
                   }
             else if (tag == "descr")
                   descr = e.readElementText();
+            else if (tag == "id")
+                  id = e.readInt();
             else
                   e.unknown();
             }
@@ -109,7 +118,6 @@ Instrument::Instrument(const Instrument& i)
       setDrumset(i._drumset);
       _useDrumset   = i._useDrumset;
       _stringData   = i._stringData;
-      _midiActions  = i._midiActions;
       _articulation = i._articulation;
       for (Channel* c : i._channel)
             _channel.append(new Channel(*c));
@@ -136,7 +144,6 @@ void Instrument::operator=(const Instrument& i)
       setDrumset(i._drumset);
       _useDrumset   = i._useDrumset;
       _stringData   = i._stringData;
-      _midiActions  = i._midiActions;
       _articulation = i._articulation;
       for (Channel* c : i._channel)
             _channel.append(new Channel(*c));
@@ -237,8 +244,6 @@ void Instrument::write(Xml& xml) const
 
       if (!(_stringData == StringData()))
             _stringData.write(xml);
-      foreach(const NamedEventList& a, _midiActions)
-            a.write(xml, "MidiAction");
       foreach(const MidiArticulation& a, _articulation)
             a.write(xml);
       for (const Channel* a : _channel)
@@ -321,11 +326,6 @@ void Instrument::read(XmlReader& e)
             // support tag "Tablature" for a while for compatibility with existent 2.0 scores
             else if (tag == "Tablature" || tag == "StringData")
                   _stringData.read(e);
-            else if (tag == "MidiAction") {
-                  NamedEventList a;
-                  a.read(e);
-                  _midiActions.append(a);
-                  }
             else if (tag == "Articulation") {
                   MidiArticulation a;
                   a.read(e);
@@ -384,26 +384,6 @@ void Instrument::read(XmlReader& e)
                   _channel[0]->bank = 128;
             _channel[0]->updateInitList();
             }
-      }
-
-//---------------------------------------------------------
-//   action
-//---------------------------------------------------------
-
-NamedEventList* Instrument::midiAction(const QString& s, int channelIdx) const
-      {
-      // first look in channel list
-
-      foreach(const NamedEventList& a, _channel[channelIdx]->midiActions) {
-            if (s == a.name)
-                  return const_cast<NamedEventList*>(&a);
-            }
-
-      foreach(const NamedEventList& a, _midiActions) {
-            if (s == a.name)
-                  return const_cast<NamedEventList*>(&a);
-            }
-      return 0;
       }
 
 //---------------------------------------------------------
@@ -468,8 +448,6 @@ void Channel::write(Xml& xml) const
             xml.tag("mute", mute);
       if (solo)
             xml.tag("solo", solo);
-      foreach(const NamedEventList& a, midiActions)
-            a.write(xml, "MidiAction");
       foreach(const MidiArticulation& a, articulation)
             a.write(xml);
       xml.etag();
@@ -533,11 +511,6 @@ void Channel::read(XmlReader& e)
                   MidiArticulation a;
                   a.read(e);
                   articulation.append(a);
-                  }
-            else if (tag == "MidiAction") {
-                  NamedEventList a;
-                  a.read(e);
-                  midiActions.append(a);
                   }
             else if (tag == "synti")
                   synti = e.readElementText();
@@ -701,7 +674,6 @@ bool Instrument::operator==(const Instrument& i) const
          &&  i._minPitchP == _minPitchP
          &&  i._maxPitchP == _maxPitchP
          &&  i._useDrumset == _useDrumset
-         &&  i._midiActions == _midiActions
          &&  i._channel == _channel
          &&  i._articulation == _articulation
          &&  i._transpose.diatonic == _transpose.diatonic
@@ -970,7 +942,6 @@ Instrument Instrument::fromTemplate(const InstrumentTemplate* t)
             instr.setDrumset(t->drumset ? t->drumset : smDrumset);
       for (int i = 0; i < t->nstaves(); ++i)
             instr.setClefType(i, t->clefTypes[i]);
-      instr.setMidiActions(t->midiActions);
       instr.setArticulation(t->articulation);
       instr._channel.clear();
       for (const Channel& c : t->channel)

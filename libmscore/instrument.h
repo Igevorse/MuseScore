@@ -57,17 +57,17 @@ class StaffNameList : public QList<StaffName> {
       };
 
 //---------------------------------------------------------
-//   NamedEventList
+//   MidiActionItem
 //---------------------------------------------------------
 
-struct NamedEventList {
-      QString name;
+struct MidiActionItem {
+      unsigned int id;
+      QString instrChannel;
       QString descr;
-      std::vector<MidiCoreEvent> events;
-
-      void write(Xml&, const QString& name) const;
+      MidiCoreEvent event;
+      void write(Xml&) const;
       void read(XmlReader&);
-      bool operator==(const NamedEventList& i) const { return i.name == name && i.events == events; }
+      bool operator==(const MidiActionItem& i) const { return i.event == event && i.descr == descr; }
       };
 
 //---------------------------------------------------------
@@ -116,7 +116,6 @@ struct Channel {
       bool solo;
       bool soloMute;
 
-      QList<NamedEventList> midiActions;
       QList<MidiArticulation> articulation;
 
       Channel();
@@ -143,7 +142,6 @@ class Instrument {
       Drumset* _drumset;
       StringData  _stringData;
 
-      QList<NamedEventList>   _midiActions;
       QList<MidiArticulation> _articulation;
       QList<Channel*> _channel;      // at least one entry
       QList<ClefTypeList> _clefType;
@@ -156,7 +154,6 @@ class Instrument {
 
       void read(XmlReader&);
       void write(Xml& xml) const;
-      NamedEventList* midiAction(const QString& s, int channel) const;
       int channelIdx(const QString& s) const;
       void updateVelocity(int* velocity, int channel, const QString& name);
       void updateGateTime(int* gateTime, int channelIdx, const QString& name);
@@ -184,12 +181,10 @@ class Instrument {
       ClefTypeList clefType(int staffIdx) const;
       void setClefType(int staffIdx, const ClefTypeList& c);
 
-      const QList<NamedEventList>& midiActions() const       { return _midiActions; }
       const QList<MidiArticulation>& articulation() const    { return _articulation; }
 
       const QList<Channel*>& channel() const                 { return _channel; }
 
-      void setMidiActions(const QList<NamedEventList>& l)    { _midiActions = l;  }
       void setArticulation(const QList<MidiArticulation>& l) { _articulation = l; }
       const StringData* stringData() const                   { return &_stringData; }
       void setStringData(const StringData& d)                { _stringData = d;     }

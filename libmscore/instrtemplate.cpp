@@ -176,7 +176,6 @@ void InstrumentTemplate::init(const InstrumentTemplate& t)
       else
             drumset = 0;
       stringData  = t.stringData;
-      midiActions = t.midiActions;
       channel     = t.channel;
       }
 
@@ -268,8 +267,6 @@ void InstrumentTemplate::write(Xml& xml) const
             xml.tag("drumset", int(useDrumset));
       if (drumset)
             drumset->save(xml);
-      foreach(const NamedEventList& a, midiActions)
-            a.write(xml, "MidiAction");
       foreach(const Channel& a, channel)
             a.write(xml);
       foreach(const MidiArticulation& ma, articulation) {
@@ -410,11 +407,6 @@ void InstrumentTemplate::read(XmlReader& e)
                         drumset->clear();
                         }
                   drumset->load(e);
-                  }
-            else if (tag == "MidiAction") {
-                  NamedEventList a;
-                  a.read(e);
-                  midiActions.append(a);
                   }
             else if (tag == "Channel" || tag == "channel") {
                   Channel a;

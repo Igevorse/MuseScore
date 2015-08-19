@@ -975,6 +975,7 @@ MuseScore::MuseScore()
       if (!preferences.instrumentList2.isEmpty())
             loadInstrumentTemplates(preferences.instrumentList2);
 
+      loadMidiActions();
       preferencesChanged();
       if (seq) {
             connect(seq, SIGNAL(started()), SLOT(seqStarted()));
@@ -1002,6 +1003,60 @@ MuseScore::MuseScore()
 MuseScore::~MuseScore()
       {
       delete synti;
+      }
+
+//---------------------------------------------------------
+//   loadMidiActions
+//---------------------------------------------------------
+
+bool MuseScore::loadMidiActions()
+      {
+      QString path = preferences.myTemplatesPath + "/midi-actions.xml";
+      QFile qf(path);
+      if (!qf.open(QIODevice::Text | QIODevice::ReadOnly)) {
+            qDebug("cannot load midi actions at <%s>", qPrintable(path));
+            return false;
+            }
+
+      XmlReader e(&qf);
+      while (e.readNextStartElement()) {
+            if (e.name() == "museScore") {
+                  while (e.readNextStartElement()) {
+                        if (e.name() == "MidiAction") {
+                              MidiActionItem ai;
+                              ai.read(e);
+                              ai.id = _midiActionList.count();
+                              _midiActionList.append(ai);
+                              }
+                        else
+                              e.unknown();
+                        }
+                  }
+            }
+      qDebug()<<"MIDI Actions loaded:"<<_midiActionList.count();
+      return true;
+      }
+
+//---------------------------------------------------------
+//   saveMidiActions
+//---------------------------------------------------------
+
+bool MuseScore::saveMidiActions()
+      {
+      QString path = preferences.myTemplatesPath + "/midi-actions.xml";
+      QFile qf(path);
+      if (!qf.open(QIODevice::WriteOnly)) {
+            qDebug("cannot save midi actions at <%s>", qPrintable(path));
+            return false;
+            }
+      Xml xml(&qf);
+      xml << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+      xml.stag("museScore");
+      for (MidiActionItem i : _midiActionList)
+            i.write(xml);
+      xml.etag();
+      qf.close();
+      return true;
       }
 
 //---------------------------------------------------------
