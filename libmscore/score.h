@@ -92,6 +92,7 @@ struct Channel;
 struct Interval;
 struct PageContext;
 struct TEvent;
+struct MidiActionItem;
 
 enum class ClefType : signed char;
 enum class SymId;
@@ -298,6 +299,7 @@ class Score : public QObject {
             };
 
    private:
+      QList<MidiActionItem> midiActionList;
       int _linkId;
       Score* _parentScore;          // set if score is an excerpt (part)
       QList<MuseScoreView*> viewer;
@@ -1096,6 +1098,8 @@ class Score : public QObject {
 
       bool checkKeys();
       bool checkClefs();
+
+      QList<MidiActionItem>* getMidiActionList();
 
       friend class ChangeSynthesizerState;
       friend class Chord;

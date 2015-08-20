@@ -36,7 +36,7 @@ class StaffText : public Text  {
       Q_OBJECT
 
       QString _channelNames[4];
-      QList<ChannelActions> _channelActions;
+      QList<std::pair<int,QString> > midiActions;
       SwingParameters _swingParameters;
       bool _setAeolusStops;
       int aeolusStops[4];
@@ -53,9 +53,9 @@ class StaffText : public Text  {
       QString channelName(int voice) const                { return _channelNames[voice]; }
       void setChannelName(int v, const QString& s)        { _channelNames[v] = s;        }
       void setSwingParameters(int unit, int ratio)        {  _swingParameters.swingUnit = unit; _swingParameters.swingRatio = ratio; }
-      const QList<ChannelActions>* channelActions() const { return &_channelActions;    }
-      QList<ChannelActions>* channelActions()             { return &_channelActions;    }
-      const SwingParameters* swingParameters() const      { return &_swingParameters;   }
+      const SwingParameters* swingParameters() const      { return &_swingParameters;    }
+      const QList<std::pair<int,QString> >* midiActionList() const { return &midiActions; }
+      QList<std::pair<int,QString> >* midiActionList()             { return &midiActions; }
       void clearAeolusStops();
       void setAeolusStop(int group, int idx, bool val);
       bool getAeolusStop(int group, int idx) const;

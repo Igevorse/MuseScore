@@ -42,10 +42,11 @@ void StaffText::write(Xml& xml) const
       if (!xml.canWrite(this))
             return;
       xml.stag("StaffText");
-      foreach(ChannelActions s, _channelActions) {
-            int channel = s.channel;
-            foreach(QString name, s.midiActionNames)
-                  xml.tagE(QString("MidiAction channel=\"%1\" name=\"%2\"").arg(channel).arg(name));
+      xml.stag("MidiActions");
+      if (midiActions.size() != 0) {
+            for (pair<int, QString> ai : midiActions)
+                  xml.tagE(QString("action id=\"%1\" channel=\"%2\"").arg(ai.first).arg(ai.second));
+            xml.etag();
             }
       for (int voice = 0; voice < VOICES; ++voice) {
             if (!_channelNames[voice].isEmpty())
@@ -81,26 +82,17 @@ void StaffText::read(XmlReader& e)
       clearAeolusStops();
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
-            if (tag == "MidiAction") {
-                  int channel = e.intAttribute("channel", 0);
-                  QString name = e.attribute("name");
-                  bool found = false;
-                  int n = _channelActions.size();
-                  for (int i = 0; i < n; ++i) {
-                        ChannelActions* a = &_channelActions[i];
-                        if (a->channel == channel) {
-                              a->midiActionNames.append(name);
-                              found = true;
-                              break;
-                              }
+            if (tag == "MidiActions") {
+                  while (e.readNextStartElement()) {
+                        if (e.name() == "action") {
+                            int id = e.intAttribute("id");
+                            QString channel = e.attribute("channel");
+                            midiActions.append(pair<int,QString>(id,channel));
+                            e.readNext();
+                            }
+                        else
+                            e.unknown();
                         }
-                  if (!found) {
-                        ChannelActions a;
-                        a.channel = channel;
-                        a.midiActionNames.append(name);
-                        _channelActions.append(a);
-                        }
-                  e.readNext();
                   }
             else if (tag == "channelSwitch" || tag == "articulationChange") {
                   int voice = e.intAttribute("voice", -1);
