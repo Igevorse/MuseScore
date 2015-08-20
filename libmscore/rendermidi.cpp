@@ -386,26 +386,58 @@ static void collectMeasureEvents(EventMap* events, Measure* m, Staff* staff, int
             // int tick = s->tick();
             foreach(Element* e, s->annotations()) {
                   if (e->type() != Element::Type::STAFF_TEXT
-                     || e->staffIdx() < firstStaffIdx
-                     || e->staffIdx() >= nextStaffIdx)
+                      || e->staffIdx() < firstStaffIdx
+                      || e->staffIdx() >= nextStaffIdx)
                         continue;
                   const StaffText* st = static_cast<const StaffText*>(e);
                   int tick = s->tick() + tickOffset;
 
                   Instrument* instr = e->part()->instrument(tick);
-                  foreach (const ChannelActions& ca, *st->channelActions()) {
-                        int channel = ca.channel;
-                        foreach(const QString& ma, ca.midiActionNames) {
-                              NamedEventList* nel = instr->midiAction(ma, channel);
-                              if (!nel)
-                                    continue;
-                              for (MidiCoreEvent event : nel->events) {
-                                    event.setChannel(channel);
-                                    NPlayEvent e(event);
-                                    events->insert(std::pair<int, NPlayEvent>(tick, e));
+                  for(pair<int,QString> p : *st->midiActionList()) {
+                        int i = p.first;
+                        MidiActionItem* ai = nullptr;
+                        for (MidiActionItem a : *st->score()->getMidiActionList()) {
+                              if ((int)a.id == i) {
+                                    ai = &a;
+                                    QString channelName = p.second;
+                                    if (st->systemFlag()) {
+                                          // Affect all staves
+                                          for (auto insi :st->score()->parts()) {
+                                                Instrument* ins = insi->instrument(tick);
+                                                int instrChannel = -1;
+                                                for (int chi = 0; chi < ins->channel().size(); chi++) {
+                                                      Channel* ch = ins->channel(chi);
+                                                      if (ch->name == channelName) {
+                                                            instrChannel = chi;
+                                                            break;
+                                                            }
+                                                      }
+                                                if (instrChannel == -1)
+                                                      continue;
+                                                int cc = ins->channel(instrChannel)->channel;
+                                                NPlayEvent e(ai->event);
+                                                e.setChannel(cc);
+                                                events->insert(std::pair<int, NPlayEvent>(tick, e));
+                                                }
+                                          }
+                                    else {
+                                          int instrChannel = 0;
+                                          for (int chi = 0; chi < instr->channel().size(); chi++) {
+                                                Channel* ch = instr->channel(chi);
+                                                if (ch->name == channelName) {
+                                                      instrChannel = chi;
+                                                      break;
+                                                      }
+                                                }
+                                          int channelChannel = instr->channel(instrChannel)->channel;
+                                          NPlayEvent e(ai->event);
+                                          e.setChannel(channelChannel);
+                                          events->insert(std::pair<int, NPlayEvent>(tick, e));
+                                          }
                                     }
                               }
                         }
+
                   if (st->setAeolusStops()) {
                         Staff* staff = st->staff();
                         int voice   = 0;
