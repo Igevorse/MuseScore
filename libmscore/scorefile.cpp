@@ -169,6 +169,13 @@ void Score::write(Xml& xml, bool selectionOnly)
                   xml.tag(QString("metaTag name=\"%1\"").arg(i.key().toHtmlEscaped()), i.value());
             }
 
+      if (midiActionList.size() != 0) {
+            xml.stag("MidiActions");
+            for (MidiActionItem i : midiActionList)
+                  i.write(xml);
+            xml.etag();
+            }
+
       if (!selectionOnly) {
             xml.stag("PageList");
             foreach(Page* page, _pages)
@@ -979,6 +986,17 @@ bool Score::read(XmlReader& e)
             const QStringRef& tag(e.name());
             if (tag == "Staff")
                   readStaff(e);
+            else if (tag == "MidiActions") {
+                  while (e.readNextStartElement()) {
+                        if (e.name() == "MidiAction") {
+                              MidiActionItem ai;
+                              ai.read(e);
+                              midiActionList.append(ai);
+                              }
+                        else
+                              e.unknown();
+                        }
+                  }
             else if (tag == "KeySig")           // obsolete
                   e.skipCurrentElement();
             else if (tag == "StaffType") {      // obsolete

@@ -74,6 +74,7 @@
 #include "svggenerator.h"
 #include "scorePreview.h"
 
+#include "libmscore/stafftext.h"
 #ifdef OMR
 #include "omr/omr.h"
 #include "omr/omrpage.h"
@@ -2045,6 +2046,46 @@ Score::FileError readScore(Score* score, QString name, bool ignoreVersionError)
                   score->setCreated(true);
             if (rv != Score::FileError::FILE_NO_ERROR)
                   return rv;
+
+            // Sync Midi Actions in the Score and MuseScore
+            QMap<int, int> midiActionMapping;
+            for (int ii = 0; ii < score->getMidiActionList()->size(); ii++) {
+                  QList<MidiActionItem>* list = score->getMidiActionList();
+                  MidiActionItem* i = &(*list)[ii];
+                  // search for the action in musescore
+                  bool found = false;
+                  for (MidiActionItem j: *mscore->midiActionList()) {
+                        if (*i == j) {
+                              if (i->id != j.id) {
+                                    midiActionMapping[i->id] = j.id;
+                                    i->id = j.id;
+                                    }
+                              found = true;
+                              break;
+                              }
+                        }
+                  if (!found) {
+                        midiActionMapping[i->id] = mscore->midiActionList()->size();
+                        i->id = mscore->midiActionList()->size();
+                        mscore->midiActionList()->append(*i);
+                        }
+                  }
+            // Change midiAction id's in all StaffText elements
+            for (Segment* seg = score->firstMeasure()->first(Segment::Type::ChordRest); seg; seg = seg->next1(Segment::Type::ChordRest)) {
+                  foreach(Element* e, seg->annotations()) {
+                        if (e->type() != Element::Type::STAFF_TEXT)
+                              continue;
+
+                        StaffText* st = static_cast<StaffText*>(e);
+                        for (int ai = 0; ai < st->midiActionList()->size(); ai++) {
+                              pair<int,QString>* v = &(*st->midiActionList())[ai];
+                              if (midiActionMapping.value(v->first, -1) != -1)
+                                    v->first = midiActionMapping.value(v->first);
+                              }
+                        }
+                  }
+            if (midiActionMapping.size() != 0)
+                  mscore->saveMidiActions();
             }
       else if (suffix == "sf2" || suffix == "sf3") {
             importSoundfont(name);
