@@ -23,7 +23,10 @@
 #include "libmscore/stafftext.h"
 #include "libmscore/system.h"
 #include "libmscore/staff.h"
+#include "musescore.h"
 #include "globals.h"
+#include "libmscore/measure.h"
+#include "midiactiondialog.h"
 
 namespace Ms {
 
@@ -170,10 +173,10 @@ StaffTextProperties::StaffTextProperties(const StaffText* st, QWidget* parent)
                   swingBox->setValue(_staffText->swingParameters()->swingRatio);
                   }
             else if (_staffText->swingParameters()->swingUnit == 0) {
-                 swingBox->setEnabled(false);
-                 SwingOff->setChecked(true);
-                 swingBox->setValue(_staffText->swingParameters()->swingRatio);
-                 }
+                  swingBox->setEnabled(false);
+                  SwingOff->setChecked(true);
+                  swingBox->setValue(_staffText->swingParameters()->swingRatio);
+                  }
             }
 
       connect(mapper, SIGNAL(mapped(int)), SLOT(voiceButtonClicked(int)));
@@ -184,24 +187,75 @@ StaffTextProperties::StaffTextProperties(const StaffText* st, QWidget* parent)
       //---------------------------------------------------
       //    setup midi actions
       //---------------------------------------------------
-
-      QTreeWidgetItem* selectedItem = 0;
-      for (int i = 0; i < n; ++i) {
-            const Channel* a = part->instrument(tick)->channel(i);
-            QTreeWidgetItem* item = new QTreeWidgetItem(channelList);
-            item->setData(0, Qt::UserRole, i);
-            if (a->name.isEmpty() || a->name == "normal")
-                  item->setText(0, tr("normal"));
-            else
-                  item->setText(0, qApp->translate("InstrumentsXML", a->name.toUtf8().data()));
-            item->setText(1, qApp->translate("InstrumentsXML", a->descr.toUtf8().data()));
-            if (i == 0)
-                  selectedItem = item;
+      channelComboBox->clear();
+      if (_staffText->systemFlag()) {
+            int channelsFound = 0;
+            for (auto insi :_staffText->score()->parts()) {
+                  Instrument* ins = insi->instrument(tick);
+                  for (Channel* ch : ins->channel()) {
+                        QString name = ch->name.isEmpty()? "normal" : qApp->translate("InstrumentsXML", ch->name.toUtf8().data());
+                        bool exists = false;
+                        for (int i = 0; i < channelComboBox->count(); i++) {
+                              if (channelComboBox->itemText(i) == name) {
+                                    exists = true;
+                                    break;
+                                    }
+                              }
+                        if (!exists) {
+                              channelComboBox->addItem(name);
+                              channelsFound++;
+                              }
+                        }
+                  }
+            channelComboBox->setVisible(channelsFound != 0);
+            channelLabel->setVisible(channelsFound != 0);
             }
-      connect(channelList, SIGNAL(currentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)),
-         SLOT(channelItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)));
+      else {
+            for (int i = 0; i < n; ++i) {
+                  const Channel* a = part->instrument(tick)->channel(i);
+                  if (a->name.isEmpty() || a->name == "normal")
+                        channelComboBox->addItem(tr("normal"));
+                  else
+                        channelComboBox->addItem(qApp->translate("InstrumentsXML", a->name.toUtf8().data()));
+                  }
+            }
       connect(this, SIGNAL(accepted()), SLOT(saveValues()));
-      channelList->setCurrentItem(selectedItem);
+      channelComboBox->setCurrentIndex(0);
+      connect(channelComboBox,       SIGNAL(currentIndexChanged(int)), SLOT(instrumentChannelChanged(int)));
+      connect(addActionBtn,          SIGNAL(clicked(bool)),            SLOT(pickMidiAction(bool)));
+      connect(removeActionBtn,       SIGNAL(clicked(bool)),            SLOT(removeSelectedAction(bool)));
+      connect(addGlobalActionBtn,    SIGNAL(clicked(bool)),            SLOT(addMidiAction(bool)));
+      connect(removeGlobalActionBtn, SIGNAL(clicked(bool)),            SLOT(deleteMidiAction(bool)));
+      connect(clearFilter,           SIGNAL(clicked(bool)),            SLOT(clearFilterEdit(bool)));
+      connect(actionFilter,          SIGNAL(textChanged(QString)),     SLOT(actionFilterTextChanged(QString)));
+
+      availableActionsList->clear();
+      for (MidiActionItem ai : *mscore->midiActionList()) {
+            QTreeWidgetItem* item = new QTreeWidgetItem(availableActionsList);
+            item->setText(0, ai.descr);
+            item->setData(0, Qt::UserRole, ai.id);
+            item->setText(1, QString::number(ai.event.dataA()));
+            item->setText(2, QString::number(ai.event.dataB()));
+            }
+
+      for (pair<int,QString> p : *_staffText->midiActionList()) {
+            int i = p.first;
+            for (auto ai :*_staffText->score()->getMidiActionList()) {
+                  if ((int)ai.id == i) {
+                        QTreeWidgetItem* item = new QTreeWidgetItem(selectedActionsList);
+                        item->setFlags(item->flags() & ~Qt::ItemIsDropEnabled); // prevent rewriting the item on drop
+                        item->setText(0, ai.descr);
+                        item->setData(0, Qt::UserRole, ai.id);
+                        item->setText(1, QString::number(ai.event.dataA()));
+                        item->setText(2, QString::number(ai.event.dataB()));
+                        item->setData(3, Qt::UserRole, p.second); // channel: normal/pizzicato/tremble/mute
+                        break;
+                        }
+                  }
+            }
+      // Show actions only for selected instrument channel
+      instrumentChannelChanged(channelComboBox->currentIndex());
+      selectedActionsList->hideColumn(3);
 
       //---------------------------------------------------
       //    setup aeolus stops
@@ -345,91 +399,6 @@ void StaffTextProperties::voiceButtonClicked(int val)
       }
 
 //---------------------------------------------------------
-//   saveChannel
-//---------------------------------------------------------
-
-void StaffTextProperties::saveChannel(int channel)
-      {
-      QList<ChannelActions>* ca = _staffText->channelActions();
-      int n = ca->size();
-      for (int i = 0; i < n; ++i) {
-            ChannelActions* a = &(*ca)[i];
-            if (a->channel == channel) {
-                  ca->removeAt(i);
-                  break;
-                  }
-            }
-
-      ChannelActions a;
-      a.channel = channel;
-
-      for (int i = 0; i < actionList->topLevelItemCount(); ++i) {
-            QTreeWidgetItem* item = actionList->topLevelItem(i);
-            if (item->isSelected())
-                  a.midiActionNames.append(item->text(0));
-            }
-      ca->append(a);
-      }
-
-//---------------------------------------------------------
-//   channelItemChanged
-//---------------------------------------------------------
-
-void StaffTextProperties::channelItemChanged(QTreeWidgetItem* item, QTreeWidgetItem* pitem)
-      {
-      if (pitem)
-            saveChannel(pitem->data(0, Qt::UserRole).toInt());
-      if (item == 0)
-            return;
-
-      actionList->clear();
-      Part* part = _staffText->staff()->part();
-
-      int channelIdx      = item->data(0, Qt::UserRole).toInt();
-      int tick = static_cast<Segment*>(_staffText->parent())->tick();
-      Channel* channel    = part->instrument(tick)->channel(channelIdx);
-      QString channelName = channel->name;
-
-      for (const NamedEventList& e : part->instrument(tick)->midiActions()) {
-            QTreeWidgetItem* item = new QTreeWidgetItem(actionList);
-            if (e.name.isEmpty() || e.name == "normal") {
-                  item->setText(0, tr("normal"));
-                  item->setData(0, Qt::UserRole, "normal");
-                  }
-            else {
-                  item->setText(0, qApp->translate("InstrumentsXML", e.name.toUtf8().data()));
-                  item->setData(0, Qt::UserRole, e.name);
-                  }
-            item->setText(1, qApp->translate("InstrumentsXML", e.descr.toUtf8().data()));
-            }
-      for (const NamedEventList& e : channel->midiActions) {
-            QTreeWidgetItem* item = new QTreeWidgetItem(actionList);
-            if (e.name.isEmpty() || e.name == "normal") {
-                  item->setText(0, tr("normal"));
-                  item->setData(0, Qt::UserRole, "normal");
-                  }
-            else {
-                  item->setText(0, qApp->translate("InstrumentsXML", e.name.toUtf8().data()));
-                  item->setData(0, Qt::UserRole, e.name);
-                  }
-            item->setText(1, qApp->translate("InstrumentsXML", e.descr.toUtf8().data()));
-            }
-      for (const ChannelActions& ca : *_staffText->channelActions()) {
-            if (ca.channel == channelIdx) {
-                  for (QString s : ca.midiActionNames) {
-                        QList<QTreeWidgetItem*> items;
-                        for (int i = 0; i < actionList->topLevelItemCount(); i++) {
-                              QTreeWidgetItem* item = actionList->topLevelItem(i);
-                              if (item->data(0, Qt::UserRole) == s) {
-                                    item->setSelected(true);
-                                    }
-                              }
-                        }
-                  }
-            }
-      }
-
-//---------------------------------------------------------
 //   saveValues
 //---------------------------------------------------------
 
@@ -450,11 +419,23 @@ void StaffTextProperties::saveValues()
                         }
                   }
             }
-
-      QTreeWidgetItem* pitem = channelList->currentItem();
-      if (pitem)
-            saveChannel(pitem->data(0, Qt::UserRole).toInt());
-
+      //
+      // save midi actions
+      //
+      _staffText->midiActionList()->clear();
+      for (int i = 0; i < selectedActionsList->topLevelItemCount(); ++i) {
+            QTreeWidgetItem* item = selectedActionsList->topLevelItem(i);
+            int data = item->data(0, Qt::UserRole).toInt();
+            for (MidiActionItem ai : *mscore->midiActionList()) {
+                  if ((int)ai.id == data) {
+                        ai.instrChannel = item->data(3, Qt::UserRole).toString();   // normal/pizzicato/tremolo/mute
+                        if (!_staffText->score()->getMidiActionList()->contains(ai))
+                              _staffText->score()->getMidiActionList()->append(ai);
+                        _staffText->midiActionList()->append(pair<int,QString>(data, ai.instrChannel));
+                        break;
+                        }
+                  }
+            }
       //
       // save Aeolus stops
       //
@@ -483,5 +464,150 @@ void StaffTextProperties::saveValues()
                   }
             }
       }
-}
 
+//---------------------------------------------------------
+//   actionFilterTextChanged
+//---------------------------------------------------------
+
+void StaffTextProperties::actionFilterTextChanged(const QString &searchPhrase)
+      {
+      QTreeWidgetItemIterator iList(availableActionsList);
+      while (*iList) {
+            (*iList)->setHidden(false);
+            if (!(*iList)->text(0).toLower().contains(searchPhrase.toLower()) && !searchPhrase.isEmpty())
+                  (*iList)->setHidden(true);
+            ++iList;
+            }
+      }
+
+//---------------------------------------------------------
+//   clearFilterEdit
+//---------------------------------------------------------
+
+void StaffTextProperties::clearFilterEdit(bool)
+      {
+      actionFilter->clear();
+      QTreeWidgetItemIterator iList(availableActionsList);
+      while (*iList) {
+            (*iList)->setHidden(false);
+            ++iList;
+            }
+      }
+
+//---------------------------------------------------------
+//   deleteMidiAction
+//---------------------------------------------------------
+
+void StaffTextProperties::deleteMidiAction(bool)
+      {
+      QTreeWidgetItem* selectedItem = availableActionsList->currentItem();
+      if (!selectedItem)
+            return;
+
+      int ret = QMessageBox::warning(0,tr("MuseScore"),
+            tr("All occurrences of this MIDI Action will be removed from this Score!"), QMessageBox::Ok | QMessageBox::Cancel);
+      if (ret == QMessageBox::Cancel)
+            return;
+
+      int data = selectedItem->data(0, Qt::UserRole).toInt();
+      for (int i = 0; i < selectedActionsList->topLevelItemCount(); ++i) {
+            QTreeWidgetItem* item = selectedActionsList->topLevelItem(i);
+            if (item->data(0, Qt::UserRole).toInt() == data) {
+                  delete item;
+                  break;
+                  }
+            }
+      delete selectedItem;
+      for (int i = 0; i < mscore->midiActionList()->size(); i++) {
+            if ((int)mscore->midiActionList()->at(i).id == data) {
+                  mscore->midiActionList()->removeAt(i);
+                  mscore->saveMidiActions();
+                  break;
+                  }
+            }
+      for (Segment* seg = _staffText->score()->firstMeasure()->first(Segment::Type::ChordRest); seg; seg = seg->next1(Segment::Type::ChordRest)) {
+            foreach(Element* e, seg->annotations()) {
+                  if (e->type() != Element::Type::STAFF_TEXT)
+                        continue;
+
+                  StaffText* st = static_cast<StaffText*>(e);
+                  for (int ai = 0; ai < st->midiActionList()->size(); ai++) {
+                        if (st->midiActionList()->at(ai).first == data) {
+                              st->midiActionList()->removeAt(ai);
+                              break;
+                              }
+                        }
+                  }
+            }
+      }
+
+//---------------------------------------------------------
+//   addMidiAction
+//---------------------------------------------------------
+
+void StaffTextProperties::addMidiAction(bool)
+      {
+      MidiActionDialog* ad = new MidiActionDialog();
+      if (ad->exec() == QDialog::Rejected)
+            return;
+
+      MidiActionItem ai = ad->ai;
+      ai.instrChannel = channelComboBox->currentText();
+      ai.id = mscore->midiActionList()->size();
+      mscore->midiActionList()->append(ai);
+
+      QTreeWidgetItem* item = new QTreeWidgetItem(availableActionsList);
+      item->setText(0, ai.descr);
+      item->setData(0, Qt::UserRole, ai.id);
+      item->setText(1, QString::number(ai.event.dataA()));
+      item->setText(2, QString::number(ai.event.dataB()));
+      mscore->saveMidiActions();
+      }
+
+//---------------------------------------------------------
+//   pickMidiAction
+//---------------------------------------------------------
+
+void StaffTextProperties::pickMidiAction(bool)
+      {
+      QTreeWidgetItem* selectedItem = availableActionsList->currentItem();
+      if (!selectedItem)
+            return;
+      int data = selectedItem->data(0, Qt::UserRole).toInt();
+      for (int i = 0; i < selectedActionsList->topLevelItemCount(); ++i) {
+            QTreeWidgetItem* item = selectedActionsList->topLevelItem(i);
+            if (item->data(3, Qt::UserRole).toString() == channelComboBox->currentText() && item->data(0, Qt::UserRole).toInt() == data)
+                  return;
+            }
+      QTreeWidgetItem* item = new QTreeWidgetItem(selectedActionsList);
+      item->setFlags(item->flags() & ~Qt::ItemIsDropEnabled);
+      item->setText(0, selectedItem->text(0));
+      item->setData(0, Qt::UserRole, data);
+      item->setText(1, selectedItem->text(1));
+      item->setText(2, selectedItem->text(2));
+      // store instrChannel in hidden column
+      item->setData(3, Qt::UserRole, channelComboBox->currentText());
+      }
+
+//---------------------------------------------------------
+//   removeSelectedAction
+//---------------------------------------------------------
+
+void StaffTextProperties::removeSelectedAction(bool)
+      {
+      if (selectedActionsList->currentItem())
+            delete selectedActionsList->currentItem();
+      }
+
+//---------------------------------------------------------
+//   instrumentChannelChanged
+//---------------------------------------------------------
+
+void StaffTextProperties::instrumentChannelChanged(int)
+      {
+      for (int i = 0; i < selectedActionsList->topLevelItemCount(); ++i) {
+            QTreeWidgetItem* item = selectedActionsList->topLevelItem(i);
+            item->setHidden(item->data(3, Qt::UserRole) != channelComboBox->currentText());
+            }
+      }
+}

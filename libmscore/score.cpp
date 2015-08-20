@@ -4204,7 +4204,7 @@ void Score::cropPage(qreal margins)
 //   getMidiActionList
 //---------------------------------------------------------
 
-QList<MidiActionItem>* getMidiActionList() {
+QList<MidiActionItem>* Score::getMidiActionList() {
       Score* root = rootScore();
       if (this == root)
             return &midiActionList;

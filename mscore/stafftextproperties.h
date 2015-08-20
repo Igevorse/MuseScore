@@ -44,10 +44,18 @@ class StaffTextProperties : public QDialog, public Ui::StaffTextProperties {
 
    private slots:
       void saveValues();
-      void channelItemChanged(QTreeWidgetItem*, QTreeWidgetItem*);
+      void channelItemChanged(int);
       void voiceButtonClicked(int);
       void tabChanged(int tab);
       void setSwingControls(bool);
+
+      void pickMidiAction(bool);
+      void removeSelectedAction(bool);
+      void clearFilterEdit(bool);
+      void actionFilterTextChanged(const QString &searchPhrase);
+      void addMidiAction(bool);
+      void deleteMidiAction(bool);
+      void instrumentChannelChanged(int);
 
    public:
       StaffTextProperties(const StaffText*, QWidget* parent = 0);

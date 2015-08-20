@@ -65,10 +65,10 @@ ArticulationProperties::ArticulationProperties(Articulation* na, QWidget* parent
                         channelList->item(channelList->count() - 1)->setData(Qt::UserRole, a->name);
                         }
                   }
-            for (const NamedEventList& el : instrument->midiActions()) {
+          /*  for (const NamedEventList& el : instrument->midiActions()) {
                   midiActionList->addItem(qApp->translate("InstrumentsXML", el.name.toUtf8().data()));
                   midiActionList->item(midiActionList->count() - 1)->setData(Qt::UserRole, el.name);
-                  }
+                  }*/
             }
 
 #if 0
