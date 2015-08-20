@@ -48,7 +48,7 @@ QT5_WRAP_UI (ui_headers
       omrpanel.ui startdialog.ui masterpalette.ui harmonyedit.ui pathlistdialog.ui
       note_groups.ui resourceManager.ui stafftypetemplates.ui
       startcenter.ui scorePreview.ui scoreBrowser.ui
-      logindialog.ui uploadscoredialog.ui breaksdialog.ui
+      logindialog.ui uploadscoredialog.ui breaksdialog.ui midiactiondialog.ui
 
       importmidi/importmidi_panel.ui
 
@@ -260,6 +260,7 @@ add_executable ( ${ExecutableName}
       inspector/inspectorArpeggio.cpp
       paletteBoxButton.cpp driver.cpp exportmidi.cpp noteGroups.cpp
       pathlistdialog.cpp exampleview.cpp inspector/inspectorTextLine.cpp miconengine.cpp
+      midiactiondialog.cpp
       importmidi/importmidi.cpp
       importmidi/importmidi_panel.cpp importmidi/importmidi_operations.cpp
       importmidi/importmidi_model.cpp importmidi/importmidi_delegate.cpp
