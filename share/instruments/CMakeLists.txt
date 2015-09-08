@@ -20,6 +20,7 @@
 
 install(FILES
       instruments.xml
+      midi-actions.xml
       DESTINATION ${Mscore_SHARE_NAME}${Mscore_INSTALL_NAME}instruments
       )
 

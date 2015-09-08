@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore>
+  <MidiAction>
+    <id>0</id>
+    <descr>Pedal On</descr>
+    <controller ctrl="64" value="127"/>
+    </MidiAction>
+  <MidiAction>
+    <id>1</id>
+    <descr>Pedal Off</descr>
+    <controller ctrl="64" value="0"/>
+    </MidiAction>
+  <MidiAction>
+    <id>2</id>
+    <descr>Volume 100%</descr>
+    <controller ctrl="7" value="127"/>
+    </MidiAction>
+  <MidiAction>
+    <id>3</id>
+    <descr>Volume 0%</descr>
+    <controller ctrl="7" value="0"/>
+    </MidiAction>
+  <MidiAction>
+    <id>6</id>
+    <descr>Volume 50%</descr>
+    <controller ctrl="7" value="63"/>
+    </MidiAction>
+  <MidiAction>
+    <id>8</id>
+    <descr>Pan right</descr>
+    <controller ctrl="10" value="127"/>
+    </MidiAction>
+  <MidiAction>
+    <id>9</id>
+    <descr>Pan left</descr>
+    <controller ctrl="10" value="0"/>
+    </MidiAction>
+  <MidiAction>
+    <id>10</id>
+    <descr>Portamento On</descr>
+    <controller ctrl="65" value="127"/>
+    </MidiAction>
+  <MidiAction>
+    <id>11</id>
+    <descr>Portamento Off</descr>
+    <controller ctrl="65" value="0"/>
+    </MidiAction>
+  </museScore>

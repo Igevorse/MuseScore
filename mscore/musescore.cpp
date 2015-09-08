@@ -1011,7 +1011,7 @@ MuseScore::~MuseScore()
 
 bool MuseScore::loadMidiActions()
       {
-      QString path = preferences.myTemplatesPath + "/midi-actions.xml";
+      QString path = preferences.myTemplatesPath + ":/data/midi-actions.xml";
       QFile qf(path);
       if (!qf.open(QIODevice::Text | QIODevice::ReadOnly)) {
             qDebug("cannot load midi actions at <%s>", qPrintable(path));
@@ -1043,7 +1043,7 @@ bool MuseScore::loadMidiActions()
 
 bool MuseScore::saveMidiActions()
       {
-      QString path = preferences.myTemplatesPath + "/midi-actions.xml";
+      QString path = preferences.myTemplatesPath + ":/data/midi-actions.xml";
       QFile qf(path);
       if (!qf.open(QIODevice::WriteOnly)) {
             qDebug("cannot save midi actions at <%s>", qPrintable(path));
