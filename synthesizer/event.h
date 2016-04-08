@@ -34,14 +34,17 @@ enum {
       ME_AFTERTOUCH = 0xd0,
       ME_PITCHBEND  = 0xe0,
       ME_SYSEX      = 0xf0,
-      ME_META       = 0xff,
+      ME_MTC_QF     = 0xf1, // MTC Quarter Frame
       ME_SONGPOS    = 0xf2,
+      ME_SONG_SEL   = 0xf3, // Song Select
+      ME_TUNE_REQUEST= 0xf6,
       ME_ENDSYSEX   = 0xf7,
       ME_CLOCK      = 0xf8,
       ME_START      = 0xfa,
       ME_CONTINUE   = 0xfb,
       ME_STOP       = 0xfc,
       ME_SENSE      = 0xfe,   // active sense (used by yamaha)
+      ME_META       = 0xff,
 
       ME_NOTE       = 0x1,
       ME_CHORD      = 0x2,
@@ -97,28 +100,89 @@ enum {
       CTRL_LRPN               = 0x64,
 
       CTRL_MODULATION         = 0x01,
+      CTRL_LMODULATION        = 0x21,
+
+      CTRL_BREATH             = 0x02,
+      CTRL_LBREATH            = 0x22,
+
+      CTRL_FOOT               = 0x04,
+      CTRL_LFOOT              = 0x24,
+
       CTRL_PORTAMENTO_TIME    = 0x05,
+      CTRL_LPORTAMENTO_TIME   = 0x25,
+
       CTRL_VOLUME             = 0x07,
+      CTRL_LVOLUME            = 0x27,
+
+      CTRL_BALANCE            = 0x08,
+      CTRL_LBALANCE           = 0x28,
+
       CTRL_PANPOT             = 0x0a,
+      CTRL_LPANPOT            = 0x2a,
+
       CTRL_EXPRESSION         = 0x0b,
+      CTRL_LEXPRESSION        = 0x2b,
+
+      CTRL_EFFECT_1           = 0x0c,
+      CTRL_LEFFECT_1          = 0x2c,
+
+      CTRL_EFFECT_2           = 0x0d,
+      CTRL_LEFFECT_2          = 0x2d,
+
+      CTRL_GENERAL_PURPOSE_1  = 0x10,
+      CTRL_LGENERAL_PURPOSE_1 = 0x30,
+
+      CTRL_GENERAL_PURPOSE_2  = 0x11,
+      CTRL_LGENERAL_PURPOSE_2 = 0x31,
+
+
+      CTRL_GENERAL_PURPOSE_3  = 0x12,
+      CTRL_LGENERAL_PURPOSE_3 = 0x32,
+
+
+      CTRL_GENERAL_PURPOSE_4  = 0x13,
+      CTRL_LGENERAL_PURPOSE_4 = 0x33,
+
       CTRL_SUSTAIN            = 0x40,
       CTRL_PORTAMENTO         = 0x41,
       CTRL_SOSTENUTO          = 0x42,
       CTRL_SOFT_PEDAL         = 0x43,
+      CTRL_LEGATO_FOOTSWITCH  = 0x44,
+      CTRL_HOLD_2             = 0x45,
+      CTRL_SOUND_VARIATION    = 0x46,
       CTRL_HARMONIC_CONTENT   = 0x47,
       CTRL_RELEASE_TIME       = 0x48,
       CTRL_ATTACK_TIME        = 0x49,
 
       CTRL_BRIGHTNESS         = 0x4a,
+      CTRL_DECAY_TIME         = 0x4b,
+      CTRL_VIBRATO_RATE       = 0x4c,
+      CTRL_VIBRATO_DEPTH      = 0x4d,
+      CTRL_VIBRATO_DELAY      = 0x4e,
+      CTRL_SOUND_UNDEFINED    = 0x4f,
+
+      CTRL_GENERAL_PURPOSE_5  = 0x50,
+      CTRL_GENERAL_PURPOSE_6  = 0x51,
+      CTRL_GENERAL_PURPOSE_7  = 0x52,
+      CTRL_GENERAL_PURPOSE_8  = 0x53,
       CTRL_PORTAMENTO_CONTROL = 0x54,
       CTRL_REVERB_SEND        = 0x5b,
+      CTRL_TREMOLO            = 0x5c,
       CTRL_CHORUS_SEND        = 0x5d,
       CTRL_VARIATION_SEND     = 0x5e,
+      CTRL_PHASER             = 0x5f,
+
+      CTRL_DATA_INCREMENT     = 0x60,
+      CTRL_DATA_DECREMENT     = 0x61,
 
       CTRL_ALL_SOUNDS_OFF     = 0x78, // 120
       CTRL_RESET_ALL_CTRL     = 0x79, // 121
       CTRL_LOCAL_OFF          = 0x7a, // 122
-      CTRL_ALL_NOTES_OFF      = 0x7b,  // 123
+      CTRL_ALL_NOTES_OFF      = 0x7b, // 123
+      CTRL_OMNI_OFF           = 0x7c,
+      CTRL_OMNI_ON            = 0x7d,
+      CTRL_MONO_MODE          = 0x7e,
+      CTRL_POLY_MODE          = 0x7f,
 
       // special midi events are mapped to internal
       // controller

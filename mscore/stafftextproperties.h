@@ -44,7 +44,6 @@ class StaffTextProperties : public QDialog, public Ui::StaffTextProperties {
 
    private slots:
       void saveValues();
-      void channelItemChanged(int);
       void voiceButtonClicked(int);
       void tabChanged(int tab);
       void setSwingControls(bool);
